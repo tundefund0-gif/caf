@@ -1,0 +1,42 @@
+{
+  "web-search": {
+    "name": "Web Search",
+    "version": "1.0.0",
+    "description": "Search the web and fetch URL contents",
+    "file": "web-search.sh",
+    "tools": ["search", "fetch_url"],
+    "enabled": true
+  },
+  "project-index": {
+    "name": "Project Index",
+    "version": "1.0.0",
+    "description": "Index project files for fast symbol search and navigation",
+    "file": "project-index.sh",
+    "tools": ["index_project", "search_symbols", "find_file", "index_status", "watch_project"],
+    "enabled": true
+  },
+  "bg-tasks": {
+    "name": "Background Tasks",
+    "version": "1.0.0",
+    "description": "Run commands and tasks in the background",
+    "file": "bg-tasks.sh",
+    "tools": ["bg", "bg_list", "bg_result", "bg_cancel", "bg_wait"],
+    "enabled": true
+  },
+  "git-tools": {
+    "name": "Git Tools",
+    "version": "1.0.0",
+    "description": "Git integration for diffs, logs, and blame",
+    "file": "git-tools.sh",
+    "tools": ["git_diff", "git_log", "git_blame", "git_status"],
+    "enabled": true
+  },
+  "self-heal": {
+    "name": "Self Healing",
+    "version": "1.0.0",
+    "description": "Auto-detect and fix common errors",
+    "file": "self-heal.sh",
+    "tools": ["heal", "diagnose"],
+    "enabled": true
+  }
+}

@@ -1,0 +1,17 @@
+# CAF data directories
+.caf/memory/
+.caf/sessions/
+.caf/tasks/
+.caf/index/
+.caf/cache/
+
+# Temp files
+/tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.caf/.env
+.env

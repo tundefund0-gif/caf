@@ -12,6 +12,8 @@ CAF_HOME="${CAF_HOME:-$HOME/.caf}"
 CAF_CONFIG_FILE="${CAF_CONFIG_FILE:-$CAF_HOME/config.sh}"
 mkdir -p "$CAF_HOME"/{plugins,memory,sessions,index,tasks,cache} 2>/dev/null
 
+# Save user-set model before config overrides it
+CAF_USER_MODEL="${CAF_MODEL:-}"
 # Source config
 [ -f "$CAF_CONFIG_FILE" ] && source "$CAF_CONFIG_FILE"
 
@@ -83,6 +85,22 @@ log_error() { _log_error "$@"; }
 # ============================================
 # DEPENDENCY CHECK
 # ============================================
+# Auto-detect provider from available API keys if not explicitly set
+if [ "${CAF_PROVIDER:-}" = "openrouter" ] && [ -z "${OPENROUTER_API_KEY:-}" ]; then
+  if [ -n "${NVIDIA_API_KEY:-}" ]; then
+    CAF_PROVIDER="nvidia"
+    [ -z "$CAF_USER_MODEL" ] && CAF_MODEL="nvidia/nemotron-3-super-120b-a12b"
+    log_info "Auto-detected NVIDIA provider from NVIDIA_API_KEY"
+  elif [ -n "${OPENAI_API_KEY:-}" ]; then
+    CAF_PROVIDER="openai"
+    [ -z "$CAF_USER_MODEL" ] && CAF_MODEL="gpt-4o"
+    log_info "Auto-detected OpenAI provider from OPENAI_API_KEY"
+  elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    [ -z "$CAF_USER_MODEL" ] && CAF_MODEL="claude-3-5-sonnet-20241022"
+    CAF_PROVIDER="anthropic"
+    log_info "Auto-detected Anthropic provider from ANTHROPIC_API_KEY"
+  fi
+fi
 _init_deps() {
   local missing=0
 
@@ -93,19 +111,19 @@ _init_deps() {
   case "$CAF_PROVIDER" in
     openrouter)
       [ -z "$OPENROUTER_API_KEY" ] && {
-        log_error "OPENROUTER_API_KEY not set"
+        log_error "OPENROUTER_API_KEY not set. Set it or use a different provider (e.g., CAF_PROVIDER=nvidia with NVIDIA_API_KEY)"
         missing=1
       }
       ;;
     openai)
       [ -z "$OPENAI_API_KEY" ] && {
-        log_error "OPENAI_API_KEY not set"
+        log_error "OPENAI_API_KEY not set. Set it or use a different provider (e.g., CAF_PROVIDER=nvidia with NVIDIA_API_KEY)"
         missing=1
       }
       ;;
     anthropic)
       [ -z "$ANTHROPIC_API_KEY" ] && {
-        log_error "ANTHROPIC_API_KEY not set"
+        log_error "ANTHROPIC_API_KEY not set. Set it or use a different provider (e.g., CAF_PROVIDER=nvidia with NVIDIA_API_KEY)"
         missing=1
       }
       ;;
@@ -114,7 +132,7 @@ _init_deps() {
       ;;
     nvidia)
       [ -z "$NVIDIA_API_KEY" ] && {
-        log_error "NVIDIA_API_KEY not set"
+        log_error "NVIDIA_API_KEY not set. Set NVIDIA_API_KEY or use a different provider (e.g., CAF_PROVIDER=openrouter with OPENROUTER_API_KEY)"
         missing=1
       }
       ;;

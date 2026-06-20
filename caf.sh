@@ -16,7 +16,7 @@ else
   CAF_HOME="${CAF_HOME:-$HOME/.caf}"
 fi
 CAF_CONFIG_FILE="${CAF_CONFIG_FILE:-$CAF_HOME/config.sh}"
-mkdir -p "$CAF_HOME"/{plugins,memory,sessions,index,tasks,cache} 2>/dev/null
+mkdir -p "$CAF_HOME"/{plugins,memory,sessions,index,tasks,cache,tmp} 2>/dev/null
 
 # Save user-set model before config overrides it
 CAF_USER_MODEL="${CAF_MODEL:-}"
@@ -24,7 +24,7 @@ CAF_USER_MODEL="${CAF_MODEL:-}"
 [ -f "$CAF_CONFIG_FILE" ] && source "$CAF_CONFIG_FILE"
 
 # Defaults if not set by config
-CAF_TEMP_DIR="${CAF_TEMP_DIR:-${TMPDIR:-/tmp}/caf-$$}"
+CAF_TEMP_DIR="${CAF_TEMP_DIR:-$CAF_HOME/tmp}"
 mkdir -p "$CAF_TEMP_DIR" 2>/dev/null
 CAF_MEMORY_DIR="${CAF_MEMORY_DIR:-$CAF_HOME/memory}"
 CAF_PLUGIN_DIR="${CAF_PLUGIN_DIR:-$CAF_HOME/plugins}"
@@ -56,7 +56,7 @@ CAF_CONFIRM_DANGEROUS="${CAF_CONFIRM_DANGEROUS:-true}"
 CAF_DANGEROUS_COMMANDS="${CAF_DANGEROUS_COMMANDS:-rm dd mkfs format}"
 CAF_PROMPT="${CAF_PROMPT:-CAF}"
 
-mkdir -p "$CAF_TEMP_DIR" "$CAF_MEMORY_DIR" "$CAF_TASKS_DIR" 2>/dev/null
+mkdir -p "$CAF_MEMORY_DIR" "$CAF_TASKS_DIR" 2>/dev/null
 
 # --- Color Support ---
 if [ "$CAF_COLOR" = "true" ] && [ -t 1 ]; then

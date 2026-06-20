@@ -24,7 +24,7 @@ CAF_USER_MODEL="${CAF_MODEL:-}"
 [ -f "$CAF_CONFIG_FILE" ] && source "$CAF_CONFIG_FILE"
 
 # Defaults if not set by config
-CAF_TEMP_DIR="${CAF_TEMP_DIR:-/tmp/caf-$$}"
+CAF_TEMP_DIR="${CAF_TEMP_DIR:-${TMPDIR:-/tmp}/caf-$$}"
 mkdir -p "$CAF_TEMP_DIR" 2>/dev/null
 CAF_MEMORY_DIR="${CAF_MEMORY_DIR:-$CAF_HOME/memory}"
 CAF_PLUGIN_DIR="${CAF_PLUGIN_DIR:-$CAF_HOME/plugins}"
@@ -315,26 +315,55 @@ _plugins_load() {
   [ "$CAF_PLUGINS_ENABLED" = "false" ] && { _log_info "Plugins disabled"; return 0; }
 
   local plugin_dir="$CAF_PLUGIN_DIR"
-  if [ ! -d "$plugin_dir" ]; then
-    _log_debug "No plugin directory at $plugin_dir"
-    return 0
+  local count=0
+  local loaded_any=false
+
+  # Try configured plugin directory first
+  if [ -d "$plugin_dir" ]; then
+    for f in "$plugin_dir"/*.sh; do
+      [ -f "$f" ] || continue
+      _log_info "Loading plugin: $(basename "$f")"
+      source "$f" 2>/dev/null && count=$((count + 1)) || _log_warn "Failed to load plugin: $f"
+    done
+    [ "$count" -gt 0 ] && loaded_any=true
   fi
 
-  local count=0
-  local f
-  for f in "$plugin_dir"/*.sh; do
-    [ -f "$f" ] || continue
-    _log_info "Loading plugin: $(basename "$f")"
-    source "$f" 2>/dev/null && count=$((count + 1)) || _log_warn "Failed to load plugin: $f"
-  done
+  # Fallback: try .caf/ next to the script
+  if ! $loaded_any; then
+    local script_caf
+    script_caf="$(cd "$(dirname "$0")" && pwd 2>/dev/null)/.caf/plugins"
+    if [ -d "$script_caf" ] && [ "$script_caf" != "$plugin_dir" ]; then
+      _log_info "Looking for plugins in: $script_caf"
+      for f in "$script_caf"/*.sh; do
+        [ -f "$f" ] || continue
+        _log_info "Loading plugin: $(basename "$f")"
+        source "$f" 2>/dev/null && count=$((count + 1)) || _log_warn "Failed to load plugin: $f"
+      done
+      [ "$count" -gt 0 ] && loaded_any=true
+    fi
+  fi
+
+  # Fallback: try $HOME/.caf/plugins
+  if ! $loaded_any; then
+    local home_caf="$HOME/.caf/plugins"
+    if [ -d "$home_caf" ] && [ "$home_caf" != "$plugin_dir" ]; then
+      _log_info "Looking for plugins in: $home_caf"
+      for f in "$home_caf"/*.sh; do
+        [ -f "$f" ] || continue
+        _log_info "Loading plugin: $(basename "$f")"
+        source "$f" 2>/dev/null && count=$((count + 1)) || _log_warn "Failed to load plugin: $f"
+      done
+    fi
+  fi
+
+  if ! $loaded_any; then
+    _log_debug "No plugins found in configured or fallback directories"
+  fi
 
   _log_info "Loaded $count plugin(s)"
   _log_debug "Tools available: ${!TOOL_REGISTRY[*]}"
-
   return 0
 }
-
-# Dispatch a tool call
 _tool_dispatch() {
   local tool_name="$1"
   local json_data="$2"
@@ -980,10 +1009,20 @@ _api_call_stream() {
   # Use curl with buffering off for streaming
   local temp_out
   temp_out=$(mktemp "$CAF_TEMP_DIR/stream_out.XXXXXX")
+  if [ -z "$temp_out" ] || [ ! -f "$temp_out" ]; then
+    _log_warn "Cannot create temp file, falling back to non-streaming"
+    _api_call
+    return $?
+  fi
 
   # Temp files for control flow
   local finish_marker
   finish_marker=$(mktemp "$CAF_TEMP_DIR/stream_finish.XXXXXX")
+  if [ -z "$finish_marker" ] || [ ! -f "$finish_marker" ]; then
+    _log_warn "Cannot create temp file"
+    _api_call
+    return $?
+  fi
 
   # Start streaming curl in background
   curl -s --no-buffer --max-time 120 \

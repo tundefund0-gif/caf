@@ -8,7 +8,13 @@
 set -o pipefail
 
 # --- Bootstrap: minimal config loading ---
-CAF_HOME="${CAF_HOME:-$HOME/.caf}"
+# Look for .caf/ next to the script first, then fall back to ~/.caf
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+if [ -d "$SCRIPT_DIR/.caf" ] && [ "$SCRIPT_DIR/.caf" != "$HOME/.caf" ]; then
+  CAF_HOME="${CAF_HOME:-$SCRIPT_DIR/.caf}"
+else
+  CAF_HOME="${CAF_HOME:-$HOME/.caf}"
+fi
 CAF_CONFIG_FILE="${CAF_CONFIG_FILE:-$CAF_HOME/config.sh}"
 mkdir -p "$CAF_HOME"/{plugins,memory,sessions,index,tasks,cache} 2>/dev/null
 
@@ -19,6 +25,7 @@ CAF_USER_MODEL="${CAF_MODEL:-}"
 
 # Defaults if not set by config
 CAF_TEMP_DIR="${CAF_TEMP_DIR:-/tmp/caf-$$}"
+mkdir -p "$CAF_TEMP_DIR" 2>/dev/null
 CAF_MEMORY_DIR="${CAF_MEMORY_DIR:-$CAF_HOME/memory}"
 CAF_PLUGIN_DIR="${CAF_PLUGIN_DIR:-$CAF_HOME/plugins}"
 CAF_TASKS_DIR="${CAF_TASKS_DIR:-$CAF_HOME/tasks}"
@@ -962,6 +969,7 @@ _api_call() {
 
 # Streaming API call
 _api_call_stream() {
+  mkdir -p "$CAF_TEMP_DIR" 2>/dev/null
   local url auth_header payload
 
   eval "$(_api_config)"
@@ -1178,6 +1186,7 @@ USAGE
 # ============================================
 
 _main_interactive() {
+  mkdir -p "$CAF_TEMP_DIR" "$CAF_MEMORY_DIR" 2>/dev/null
   echo ""
   echo -e "${C_GREEN}${C_BOLD}╔══════════════════════════════════════╗${C_RESET}"
   echo -e "${C_GREEN}${C_BOLD}║     CAF v2.0 - Coding Agent         ║${C_RESET}"
